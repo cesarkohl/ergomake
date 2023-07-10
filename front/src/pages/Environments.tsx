@@ -70,7 +70,34 @@ const Environments = ({ profile }: Props) => {
       },
     [ownersRes, params.owner]
   )
-  const envsRes = useEnvironmentsByRepo(owner.login, params.repo ?? '')
+
+  const reposRes = useReposByOwner(owner.login)
+  const repos = useMemo(() => {
+    return orElse(reposRes, []).filter((repo) => repo.isInstalled)
+  }, [reposRes])
+
+  const repo: Repo = useMemo(
+    () =>
+      repos.find((repo) => repo.name === params.repo) ?? {
+        owner: params.owner ?? '',
+        name: params.repo ?? '',
+        isInstalled: false,
+        environmentCount: 0,
+        variables: [],
+        lastDeployedAt: null,
+      },
+    [repos, params.owner, params.repo]
+  )
+
+  const onChangeRepo = useCallback(
+    (repo: Repo) => {
+      navigate(`/gh/${params.owner}/repos/${repo.name}`)
+    },
+    [navigate, params]
+  )
+
+  const envsRes = useEnvironmentsByRepo(owner.login, repo.name)
+  const [search, setSearch] = useState('')
   const envs = useMemo(
     () =>
       orElse(envsRes, []).sort((a, b) =>
